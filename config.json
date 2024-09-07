@@ -1,0 +1,19 @@
+{
+    "input_directory": "/home/user/Transcode_input",
+    "output_directory": "/home/user/Transcode_output",
+    "presets": {
+        "default": "Streaming.json",
+        ".mkv": "HighQuality.json",
+        ".avi": "FastConversion.json"
+    },
+    "file_types": [".mkv", ".mp4", ".mov", ".avi", ".wmv", ".flv", ".webm"],
+    "max_workers": 3,
+    "email": {
+        "sender": "your_email@example.com",
+        "recipient": "recipient@example.com",
+        "smtp_server": "smtp.example.com",
+        "smtp_port": 587,
+        "username": "your_username",
+        "password": "your_password"
+    }
+}
