@@ -1,0 +1,38 @@
+import subprocess
+import os
+
+indir = "/home/ofhd/media/Transcode_input"  # input directory !!CHANGE TO YOUR OWN DIRECTORY!!
+outdir = "/home/ofhd/media/Transcode_output"  # output directory !!CHANGE TO YOUR OWN DIRECTORY!!
+
+if not os.path.exists(indir):  # create input directory if it doesn't exist
+    os.makedirs(indir)
+
+if not os.path.exists(outdir):  # create output directory if it doesn't exist
+    os.makedirs(outdir)
+
+file_list = os.listdir(indir)
+
+for filename in file_list:  # will index every file in the input directory
+    full_path = os.path.join(indir, filename)
+    if filename.endswith((".mkv", ".mp4")):  # format check, change as desired
+        print(f"Transcoding: {full_path}")
+
+        output_path = os.path.join(outdir, filename)
+
+        handbrake_commands = [
+            "HandBrakeCLI",  # calling HandBrake
+            "--preset-import-file", "Streaming.json",  # pulling HandBrake config file
+            "-i", full_path,  # input file path
+            "-o", output_path  # output file path (will keep the same name as input file)
+        ]
+        try:
+            subprocess.run(handbrake_commands, check=True)
+            print(f"Successfully transcoded {filename} to {output_path}")
+            
+            # Delete the original file after successful transcoding
+            os.remove(full_path)
+            print(f"Deleted original file: {full_path}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error transcoding {filename}: {e}")  # error handling
+        except OSError as e:
+            print(f"Error deleting original file {full_path}: {e}")
