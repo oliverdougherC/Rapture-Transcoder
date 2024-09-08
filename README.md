@@ -20,7 +20,7 @@ Rapture-Transcoder is a simple and effecient way to transcode video files. It us
 ## Prerequisites
 
 1. Update your packages and libraries
-```sh
+```js
 sudo softwareupdate -l
 ```
 2. Install Homebrew
@@ -28,12 +28,12 @@ sudo softwareupdate -l
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 3. Install Python
-```sh
+```js
 brew install python
 ```
 
 4. Install ffmpeg
-```sh
+```js
 brew install ffmpeg
 ```
 
@@ -46,7 +46,7 @@ brew install ffmpeg
 git clone https://github.com/oliverdougherC/Rapture-Transcoder
 ```
 2. Navigate to the Rapture-Transcoder directory
-```sh
+```js
 cd Rapture-Transcoder
 ```
 
@@ -54,10 +54,10 @@ cd Rapture-Transcoder
 ## Configuration
 
 1. If desired, change the transcoding settings in the "Streaming.json" and general settings in the "config.json" files
-```sh
+```js
 nano Streaming.json
 ```
-```sh
+```js
 nano config.json
 ```
 
@@ -66,20 +66,20 @@ nano config.json
 ## Usage
 
 1. Run the script in CLI mode or GUI mode
-```sh
+```js
 python3 transcode_cli.py
 ```
-```sh
+```js
 python3 transcode_gui.py
 ```
 2. Follow the prompts to select your input and output directories. Alternatively, you can add the -i and -o flags to the launch command to set the input and output directories. You can also add the -t flag to set the number of threads to use.
-```sh
+```js
 python3 transcode_cli.py -i /path/to/input -o /path/to/output -t number_of_threads
 ```
 3. Follow the prompts to select your profile.
 4. Sit back and relax while the script transcodes your videos.
 5. If you run into an error or are curious, take a look at the log file
-```sh
+```js
 cat transcoder.log
 ```
 
