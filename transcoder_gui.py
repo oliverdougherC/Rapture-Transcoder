@@ -15,14 +15,28 @@ from HT_linuxbuild import main as transcoder_main_function, pause_event
 DEFAULT_CONFIG = "config.json"
 DEFAULT_THREADS = 4
 
+def load_config(config_file):
+    try:
+        with open(config_file, 'r') as f:
+            config = json.load(f)
+        
+        # Expand environment variables in the paths
+        for key in ['default_input_directory', 'default_output_directory']:
+            if key in config:
+                config[key] = os.path.expandvars(config[key])
+        
+        return config
+    except FileNotFoundError:
+        print(f"Config file not found: {config_file}")
+        return {}
+    except json.JSONDecodeError:
+        print(f"Error decoding JSON from config file: {config_file}")
+        return {}
+
 def ensure_directory_exists(path):
-    if not os.path.exists(path):
+    if path and not os.path.exists(path):
         os.makedirs(path)
         print(f"Created directory: {path}")
-
-def load_config(config_file):
-    with open(config_file, 'r') as f:
-        return json.load(f)
 
 class TranscoderGUI:
     def __init__(self, master):
@@ -40,9 +54,11 @@ class TranscoderGUI:
         self.default_input_dir = os.path.expanduser(self.default_input_dir)
         self.default_output_dir = os.path.expanduser(self.default_output_dir)
 
-        # Ensure default directories exist
-        ensure_directory_exists(self.default_input_dir)
-        ensure_directory_exists(self.default_output_dir)
+        # Ensure default directories exist (only if they're not empty)
+        if self.default_input_dir:
+            ensure_directory_exists(self.default_input_dir)
+        if self.default_output_dir:
+            ensure_directory_exists(self.default_output_dir)
 
         self.delete_original_var = tk.BooleanVar()
         self.create_widgets()
