@@ -19,28 +19,33 @@ Rapture-Transcoder is a simple and effecient way to transcode video files. It us
 <!-- PREREQUISITES -->
 ## Prerequisites
 
-1. Install HandbrakeCLI on your system. You can do this by running
+1. Update your packages and libraries
 ```sh
-sudo apt install handbrake-cli
+sudo softwareupdate -l
 ```
-2. Install Python on your system. You can this by running 
+2. Install Homebrew
+```js
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+3. Install Python
 ```sh
-sudo apt install python3
+brew install python
 ```
+
+4. Install ffmpeg
+```sh
+brew install ffmpeg
+```
+
 
 <!-- INSTALLATION -->
 ## Installation
 
-1. Update your packages and libraries
-```sh
-sudo apt update && sudo apt upgrade -y
-```
-
-2. Install the Rapture-Transcoder script by running 
-```sh
+1. Install the Rapture-Transcoder script in whatever directory you want
+```js
 git clone https://github.com/oliverdougherC/Rapture-Transcoder
 ```
-3. Navigate to the Rapture-Transcoder directory
+2. Navigate to the Rapture-Transcoder directory
 ```sh
 cd Rapture-Transcoder
 ```

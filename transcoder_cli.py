@@ -4,6 +4,7 @@ import argparse
 import json
 import threading
 import time
+import subprocess
 
 # Add the directory containing HT_linuxbuild.py to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -47,6 +48,55 @@ def input_with_timeout(prompt, timeout=TIMEOUT):
         print("\nTimeout reached. Using default value.")
         return None
     return result[0]
+
+def verify_file(input_file, output_file):
+    try:
+        # Check if ffprobe is available
+        subprocess.run(["ffprobe", "-version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except FileNotFoundError:
+        print("WARNING: ffprobe not found. Skipping file verification.")
+        return True
+
+    try:
+        # Get input file duration
+        input_duration = float(subprocess.check_output([
+            "ffprobe", "-v", "error", "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1", input_file
+        ]).decode().strip())
+
+        # Get output file duration
+        output_duration = float(subprocess.check_output([
+            "ffprobe", "-v", "error", "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1", output_file
+        ]).decode().strip())
+
+        # Compare durations (allow for small difference due to encoding)
+        duration_difference = abs(input_duration - output_duration)
+        if duration_difference > 1:  # More than 1 second difference
+            print(f"WARNING: Duration mismatch for {input_file}")
+            print(f"Input duration: {input_duration:.2f}s, Output duration: {output_duration:.2f}s")
+            return False
+
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"ERROR: Failed to verify file {input_file}: {e}")
+        return False
+    except ValueError as e:
+        print(f"ERROR: Failed to parse duration for {input_file}: {e}")
+        return False
+
+def process_file(input_file, output_file, handbrake_command):
+    try:
+        # ... (keep existing code)
+
+        # Verify the transcoded file
+        if verify_file(input_file, output_file):
+            print(f"Successfully transcoded and verified: {input_file}")
+        else:
+            print(f"WARNING: Verification failed for {input_file}")
+
+    except Exception as e:
+        print(f"ERROR - Error processing file {input_file}: {str(e)}")
 
 def main():
     parser = argparse.ArgumentParser(description="Handbrake Transcoder CLI")
