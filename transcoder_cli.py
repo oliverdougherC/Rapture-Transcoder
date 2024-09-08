@@ -17,7 +17,14 @@ TIMEOUT = 20  # Timeout in seconds
 
 def load_config(config_file):
     with open(config_file, 'r') as f:
-        return json.load(f)
+        config = json.load(f)
+    
+    # Expand environment variables in the paths
+    for key in ['input_directory', 'output_directory']:
+        if key in config:
+            config[key] = os.path.expandvars(config[key])
+    
+    return config
 
 def ensure_directory_exists(path):
     if not os.path.exists(path):
@@ -54,12 +61,8 @@ def main():
     config = load_config(args.config)
 
     # Get default directories from config
-    default_input_dir = config.get("default_input_directory", "")
-    default_output_dir = config.get("default_output_directory", "")
-
-    # Convert paths to the correct format for the current OS
-    default_input_dir = os.path.expanduser(default_input_dir)
-    default_output_dir = os.path.expanduser(default_output_dir)
+    default_input_dir = config.get("input_directory", "")
+    default_output_dir = config.get("output_directory", "")
 
     print("Welcome to the Handbrake Transcoder CLI")
 
