@@ -2,18 +2,21 @@ import os
 import sys
 import argparse
 import select
+import json
 
 # Add the directory containing HT_linuxbuild.py to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from HT_linuxbuild import main as transcoder_main_function
 
-# Default paths
-USER = os.getenv('USER')
-DEFAULT_INPUT_DIR = f"/home/{USER}/media/transcode_input"
-DEFAULT_OUTPUT_DIR = f"/home/{USER}/media/transcode_output"
+# Default values
+DEFAULT_CONFIG_FILE = "config.json"
 DEFAULT_THREADS = 4
 TIMEOUT = 20  # Timeout in seconds
+
+def load_config(config_file):
+    with open(config_file, 'r') as f:
+        return json.load(f)
 
 def ensure_directory_exists(path):
     if not os.path.exists(path):
@@ -30,23 +33,26 @@ def input_with_timeout(prompt, timeout=TIMEOUT):
         return None
 
 def main():
-    # Ensure default directories exist
-    ensure_directory_exists(DEFAULT_INPUT_DIR)
-    ensure_directory_exists(DEFAULT_OUTPUT_DIR)
-
     parser = argparse.ArgumentParser(description="Handbrake Transcoder CLI")
-    parser.add_argument("-c", "--config", default="config.json", help="Path to the config file")
-    parser.add_argument("-i", "--input", default=DEFAULT_INPUT_DIR, help="Override input directory")
-    parser.add_argument("-o", "--output", default=DEFAULT_OUTPUT_DIR, help="Override output directory")
+    parser.add_argument("-c", "--config", default=DEFAULT_CONFIG_FILE, help="Path to the config file")
+    parser.add_argument("-i", "--input", help="Override input directory")
+    parser.add_argument("-o", "--output", help="Override output directory")
     parser.add_argument("-t", "--threads", type=int, help="Number of concurrent transcoding threads")
     parser.add_argument("--delete-original", action="store_true", help="Delete original files after successful transcoding and verification")
     args = parser.parse_args()
 
+    # Load config
+    config = load_config(args.config)
+
+    # Get default directories from config
+    default_input_dir = config.get("default_input_directory", "")
+    default_output_dir = config.get("default_output_directory", "")
+
     print("Welcome to the Handbrake Transcoder CLI")
 
-    # Use default paths if not provided
-    args.input = args.input or input(f"Enter input directory (default: {DEFAULT_INPUT_DIR}): ") or DEFAULT_INPUT_DIR
-    args.output = args.output or input(f"Enter output directory (default: {DEFAULT_OUTPUT_DIR}): ") or DEFAULT_OUTPUT_DIR
+    # Use config paths if not provided in command line arguments
+    args.input = args.input or input(f"Enter input directory (default: {default_input_dir}): ") or default_input_dir
+    args.output = args.output or input(f"Enter output directory (default: {default_output_dir}): ") or default_output_dir
     
     # Ensure user-specified directories exist
     ensure_directory_exists(args.input)

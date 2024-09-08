@@ -1,6 +1,6 @@
 {
-    "input_directory": "/home/user/Transcode_input",
-    "output_directory": "/home/user/Transcode_output",
+    "input_directory": "/home/{USER}/media/transcode_input",
+    "output_directory": "/home/{USER}/media/transcode_output",
     "presets": {
         "default": "Streaming.json",
         ".mkv": "HighQuality.json",

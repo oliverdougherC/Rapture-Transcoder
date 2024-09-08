@@ -1,13 +1,7 @@
-Transcode.py is a crude script to transcode every video file in a given input directory and send the new file to a specified output directory. 
-
-The default is:
-input = C:\Transcode_input,
-output = C:\Transcode_output
-
-The settings that dictate the transcoding process can be changed in the "Streaming.json" and 'config.json' files.
-
 Default settings:
 
+input = /home/user/media/transcode_input,
+output = /home/user/media/transcode_output
 AV1 10bit nvenc video codec, 
 up to 8K max resolution, 
 up to 120fps, 
@@ -16,17 +10,14 @@ All English subtitles,
 320 kbps audio bitrate, 
 "slowest" video preset, 
 
-If you want to change these settings, you can toy with the Streaming.json file or create, save, and export your own profile in the Handbrake gui application.
-
-Simply run the Transcode.py file to begin transcoding all .mp4 and .mkv files in the input directory
-
-
-##About the script:
+<!-- ABOUT THE SCRIPT -->
+## About the Script
 
 Rapture-Transcoder is a simple and effecient way to transcode video files. It uses HandbrakeCLI under the hood to transcode video files. It is designed to be run as a schedualed task or manually. It was initially designed to be a CLI program, but I have since added a GUI to make it more user friendly. I am not a python programmer, so forgive me if this is not up to python standards.
 
 
-##Prerequisites:
+<!-- PREREQUISITES -->
+## Prerequisites
 
 1. Install HandbrakeCLI on your system. You can do this by running
 ```sh
@@ -37,8 +28,8 @@ sudo apt install handbrake-cli
 sudo apt install python3
 ```
 
-
-##Installation:
+<!-- INSTALLATION -->
+## Installation
 
 1. Install the Rapture-Transcoder script by running 
 ```sh
@@ -49,8 +40,8 @@ git clone https://github.com/oliverdougherC/Rapture-Transcoder
 cd Rapture-Transcoder
 ```
 
-
-##Configuration:
+<!-- CONFIGURATION -->
+## Configuration
 
 1. If desired, change the transcoding settings in the "Streaming.json" and general settings in the "config.json" files
 ```sh
@@ -61,7 +52,8 @@ nano config.json
 ```
 
 
-##Usage:
+<!-- USAGE -->
+## Usage
 
 1. Run the script in CLI mode or GUI mode
 ```sh

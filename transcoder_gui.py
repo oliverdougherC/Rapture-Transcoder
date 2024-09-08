@@ -3,32 +3,41 @@ from tkinter import filedialog, messagebox, ttk
 import threading
 import os
 import sys
+import json
 
 # Add the directory containing HT_linuxbuild.py to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from HT_linuxbuild import main as transcoder_main_function, pause_event
 
-# Default paths and values
-USER = os.getenv('USER')
-DEFAULT_INPUT_DIR = f"/home/{USER}/media/transcode_input"
-DEFAULT_OUTPUT_DIR = f"/home/{USER}/media/transcode_output"
-DEFAULT_THREADS = 4
+# Default values
 DEFAULT_CONFIG = "config.json"
+DEFAULT_THREADS = 4
 
 def ensure_directory_exists(path):
     if not os.path.exists(path):
         os.makedirs(path)
         print(f"Created directory: {path}")
 
+def load_config(config_file):
+    with open(config_file, 'r') as f:
+        return json.load(f)
+
 class TranscoderGUI:
     def __init__(self, master):
         self.master = master
         master.title("Handbrake Transcoder")
 
+        # Load config
+        self.config = load_config(DEFAULT_CONFIG)
+
+        # Get default directories from config
+        self.default_input_dir = self.config.get("default_input_directory", "")
+        self.default_output_dir = self.config.get("default_output_directory", "")
+
         # Ensure default directories exist
-        ensure_directory_exists(DEFAULT_INPUT_DIR)
-        ensure_directory_exists(DEFAULT_OUTPUT_DIR)
+        ensure_directory_exists(self.default_input_dir)
+        ensure_directory_exists(self.default_output_dir)
 
         self.delete_original_var = tk.BooleanVar()
         self.create_widgets()
@@ -38,7 +47,7 @@ class TranscoderGUI:
         self.input_label = tk.Label(self.master, text="Input Directory:")
         self.input_label.grid(row=0, column=0, sticky="e")
         self.input_entry = tk.Entry(self.master, width=50)
-        self.input_entry.insert(0, DEFAULT_INPUT_DIR)
+        self.input_entry.insert(0, self.default_input_dir)
         self.input_entry.grid(row=0, column=1)
         self.input_button = tk.Button(self.master, text="Browse", command=self.browse_input)
         self.input_button.grid(row=0, column=2)
@@ -47,7 +56,7 @@ class TranscoderGUI:
         self.output_label = tk.Label(self.master, text="Output Directory:")
         self.output_label.grid(row=1, column=0, sticky="e")
         self.output_entry = tk.Entry(self.master, width=50)
-        self.output_entry.insert(0, DEFAULT_OUTPUT_DIR)
+        self.output_entry.insert(0, self.default_output_dir)
         self.output_entry.grid(row=1, column=1)
         self.output_button = tk.Button(self.master, text="Browse", command=self.browse_output)
         self.output_button.grid(row=1, column=2)
