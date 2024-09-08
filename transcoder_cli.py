@@ -1,8 +1,9 @@
 import os
 import sys
 import argparse
-import select
 import json
+import threading
+import time
 
 # Add the directory containing HT_linuxbuild.py to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -25,12 +26,20 @@ def ensure_directory_exists(path):
 
 def input_with_timeout(prompt, timeout=TIMEOUT):
     print(prompt, end='', flush=True)
-    rlist, _, _ = select.select([sys.stdin], [], [], timeout)
-    if rlist:
-        return sys.stdin.readline().strip()
-    else:
+    result = [None]
+    
+    def get_input():
+        result[0] = input()
+    
+    thread = threading.Thread(target=get_input)
+    thread.daemon = True
+    thread.start()
+    thread.join(timeout)
+    
+    if thread.is_alive():
         print("\nTimeout reached. Using default value.")
         return None
+    return result[0]
 
 def main():
     parser = argparse.ArgumentParser(description="Handbrake Transcoder CLI")
@@ -47,6 +56,10 @@ def main():
     # Get default directories from config
     default_input_dir = config.get("default_input_directory", "")
     default_output_dir = config.get("default_output_directory", "")
+
+    # Convert paths to the correct format for the current OS
+    default_input_dir = os.path.expanduser(default_input_dir)
+    default_output_dir = os.path.expanduser(default_output_dir)
 
     print("Welcome to the Handbrake Transcoder CLI")
 

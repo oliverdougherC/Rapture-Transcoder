@@ -4,6 +4,7 @@ import threading
 import os
 import sys
 import json
+import platform
 
 # Add the directory containing HT_linuxbuild.py to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -34,6 +35,10 @@ class TranscoderGUI:
         # Get default directories from config
         self.default_input_dir = self.config.get("default_input_directory", "")
         self.default_output_dir = self.config.get("default_output_directory", "")
+
+        # Convert paths to the correct format for the current OS
+        self.default_input_dir = os.path.expanduser(self.default_input_dir)
+        self.default_output_dir = os.path.expanduser(self.default_output_dir)
 
         # Ensure default directories exist
         ensure_directory_exists(self.default_input_dir)

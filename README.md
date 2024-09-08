@@ -1,14 +1,14 @@
 Default settings:
 
-* input = /home/user/media/transcode_input
-* output = /home/user/media/transcode_output
+* Input = /home/user/media/transcode_input
+* Output = /home/user/media/transcode_output
 * AV1 10bit nvenc video codec
-* up to 8K max resolution
-* up to 120fps
+* Up to 8K max resolution
+* Up to 120fps
 * All English & Japanese audio
 * All English subtitles
 * 320 kbps audio bitrate
-* "slowest" video preset
+* "Slowest" video preset
 
 <!-- ABOUT THE SCRIPT -->
 ## About the Script
@@ -31,11 +31,16 @@ sudo apt install python3
 <!-- INSTALLATION -->
 ## Installation
 
-1. Install the Rapture-Transcoder script by running 
+1. Update your packages and libraries
+```sh
+sudo apt update && sudo apt upgrade -y
+```
+
+2. Install the Rapture-Transcoder script by running 
 ```sh
 git clone https://github.com/oliverdougherC/Rapture-Transcoder
 ```
-2. Navigate to the Rapture-Transcoder directory
+3. Navigate to the Rapture-Transcoder directory
 ```sh
 cd Rapture-Transcoder
 ```
