@@ -1,14 +1,14 @@
 Default settings:
 
-input = /home/user/media/transcode_input,
-output = /home/user/media/transcode_output
-AV1 10bit nvenc video codec, 
-up to 8K max resolution, 
-up to 120fps, 
-All English & Japanese audio, 
-All English subtitles, 
-320 kbps audio bitrate, 
-"slowest" video preset, 
+* input = /home/user/media/transcode_input
+* output = /home/user/media/transcode_output
+* AV1 10bit nvenc video codec
+* up to 8K max resolution
+* up to 120fps
+* All English & Japanese audio
+* All English subtitles
+* 320 kbps audio bitrate
+* "slowest" video preset
 
 <!-- ABOUT THE SCRIPT -->
 ## About the Script
