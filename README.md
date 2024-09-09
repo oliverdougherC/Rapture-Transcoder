@@ -39,6 +39,7 @@ brew install python
 5. Install ffmpeg
 ```sh
 brew install ffmpeg
+```
 
 6. Install HandbrakeCLI
 ```sh
