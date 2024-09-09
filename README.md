@@ -23,10 +23,12 @@ Rapture-Transcoder is a simple and effecient way to transcode video files. It us
 ```js
 sudo softwareupdate -l
 ```
+
 2. Install Homebrew
 ```js
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
+
 3. Install Python
 ```js
 brew install python
@@ -72,12 +74,16 @@ python3 transcode_cli.py
 ```js
 python3 transcode_gui.py
 ```
+
 2. Follow the prompts to select your input and output directories. Alternatively, you can add the -i and -o flags to the launch command to set the input and output directories. You can also add the -t flag to set the number of threads to use.
 ```js
 python3 transcode_cli.py -i /path/to/input -o /path/to/output -t number_of_threads
 ```
+
 3. Follow the prompts to select your profile.
+
 4. Sit back and relax while the script transcodes your videos.
+
 5. If you run into an error or are curious, take a look at the log file
 ```js
 cat transcoder.log

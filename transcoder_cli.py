@@ -5,16 +5,30 @@ import json
 import threading
 import time
 import subprocess
+import colorama
+import logging
+from logging.handlers import RotatingFileHandler
+
+colorama.init()
 
 # Add the directory containing HT_linuxbuild.py to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from HT_linuxbuild import main as transcoder_main_function
+from HT_macbuild import main as transcoder_main_function
 
 # Default values
 DEFAULT_CONFIG_FILE = "config.json"
-DEFAULT_THREADS = 4
 TIMEOUT = 20  # Timeout in seconds
+
+class ConsoleAndFileHandler(logging.Handler):
+    def __init__(self, filename, mode='a', maxBytes=0, backupCount=0, encoding=None, delay=False):
+        super().__init__()
+        self.console = logging.StreamHandler()
+        self.file = RotatingFileHandler(filename, mode, maxBytes, backupCount, encoding, delay)
+
+    def emit(self, record):
+        self.console.emit(record)
+        self.file.emit(record)
 
 def load_config(config_file):
     with open(config_file, 'r') as f:
@@ -87,7 +101,6 @@ def verify_file(input_file, output_file):
 
 def process_file(input_file, output_file, handbrake_command):
     try:
-        # ... (keep existing code)
 
         # Verify the transcoded file
         if verify_file(input_file, output_file):
@@ -97,6 +110,14 @@ def process_file(input_file, output_file, handbrake_command):
 
     except Exception as e:
         print(f"ERROR - Error processing file {input_file}: {str(e)}")
+
+def setup_logging(log_file):
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    handler = ConsoleAndFileHandler(log_file, maxBytes=10*1024*1024, backupCount=5)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 def main():
     parser = argparse.ArgumentParser(description="Handbrake Transcoder CLI")
@@ -110,9 +131,10 @@ def main():
     # Load config
     config = load_config(args.config)
 
-    # Get default directories from config
+    # Get default directories and threads from config
     default_input_dir = config.get("input_directory", "")
     default_output_dir = config.get("output_directory", "")
+    default_threads = config.get("default_threads", 4)  # Use 4 as fallback if not in config
 
     print("Welcome to the Handbrake Transcoder CLI")
 
@@ -125,16 +147,16 @@ def main():
     ensure_directory_exists(args.output)
 
     if not args.threads:
-        threads_input = input_with_timeout(f"Enter number of threads (default is {DEFAULT_THREADS}, {TIMEOUT}s timeout): ")
-        args.threads = int(threads_input) if threads_input and threads_input.isdigit() else DEFAULT_THREADS
+        threads_input = input_with_timeout(f"Enter number of threads (default is {default_threads}, {TIMEOUT}s timeout): ")
+        args.threads = int(threads_input) if threads_input and threads_input.isdigit() else default_threads
 
     delete_original = args.delete_original
     if not delete_original:
-        delete_input = input_with_timeout(f"Delete original files after successful transcoding? (y/n, default is y, {TIMEOUT}s timeout): ")
+        delete_input = input_with_timeout(f"Delete original files after successful transcoding? (y/n, default is n, {TIMEOUT}s timeout): ")
         if delete_input is None:
-            delete_original = True  # Default to deleting if no input
+            delete_original = False  # Default to not deleting if no input
         else:
-            delete_original = delete_input.lower() != 'n'
+            delete_original = delete_input.lower() == 'y'
 
     # Update sys.argv to pass these arguments to HT_linuxbuild's main function
     sys.argv = [sys.argv[0]]  # Keep the script name
@@ -145,9 +167,14 @@ def main():
     if delete_original:
         sys.argv.append("--delete-original")
 
+    # Setup logging
+    log_file = os.path.join(args.output, 'transcoder.log')
+    setup_logging(log_file)
+
     print("Starting transcoding and verification process...")
-    transcoder_main_function()
+    transcoder_main_function(args.input, args.output, None, None, delete_original)
     print("Transcoding and verification completed!")
+    
 
 if __name__ == "__main__":
     main()
