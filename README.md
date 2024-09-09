@@ -2,13 +2,13 @@ Default settings:
 
 * Input = /home/user/media/transcode_input
 * Output = /home/user/media/transcode_output
-* AV1 10bit nvenc video codec
+* Apple Video Toolbox H.265 10-bit codec
 * Up to 8K max resolution
 * Up to 120fps
 * All English & Japanese audio
 * All English subtitles
 * 320 kbps audio bitrate
-* "Slowest" video preset
+* "Quality" video preset
 
 <!-- ABOUT THE SCRIPT -->
 ## About the Script
@@ -20,7 +20,7 @@ Rapture-Transcoder is a simple and effecient way to transcode video files. It us
 ## Prerequisites
 
 1. Update your packages and libraries
-```js
+```sh
 sudo softwareupdate -l
 ```
 
@@ -30,12 +30,12 @@ sudo softwareupdate -l
 ```
 
 3. Install Python
-```js
+```sh
 brew install python
 ```
 
 4. Install ffmpeg
-```js
+```sh
 brew install ffmpeg
 ```
 
@@ -48,43 +48,56 @@ brew install ffmpeg
 git clone https://github.com/oliverdougherC/Rapture-Transcoder
 ```
 2. Navigate to the Rapture-Transcoder directory
-```js
+```sh
 cd Rapture-Transcoder
 ```
 
 <!-- CONFIGURATION -->
 ## Configuration
 
-1. If desired, change the transcoding settings in the "Streaming.json" and general settings in the "config.json" files
-```js
-nano Streaming.json
-```
-```js
+1. If desired, change the settings in the "config.json"
+```sh
 nano config.json
 ```
+
+2. If desired, you can tune the transcode settings further in the preset file. Refer to config.json for which file is selected. Default is "AppleSilicon.json"
+```js
+nano Presets/AppleSilicon.json
+```
+
+
 
 
 <!-- USAGE -->
 ## Usage
 
 1. Run the script in CLI mode or GUI mode
-```js
+```sh
 python3 transcode_cli.py
 ```
-```js
+```sh
 python3 transcode_gui.py
 ```
 
-2. Follow the prompts to select your input and output directories. Alternatively, you can add the -i and -o flags to the launch command to set the input and output directories. You can also add the -t flag to set the number of threads to use.
+2. Follow the prompts to select your input and output directories.
+
+3. Alternatively, you can pass optional flags onto the launch command:
+
+* -i = Input Directory
+* -o = Output Directory
+* -t = Number of threads per job
+* --delete-original = Delete original files after successful transcoding
+
+For example:
 ```js
-python3 transcode_cli.py -i /path/to/input -o /path/to/output -t number_of_threads
+python3 transcode_cli.py -i /path/to/input -o /path/to/output -t number_of_threads --delete-original
 ```
 
-3. Follow the prompts to select your profile.
+4. Follow the prompts to select your profile.
 
-4. Sit back and relax while the script transcodes your videos.
+5. Sit back and relax while the script transcodes your videos.
 
-5. If you run into an error or are curious, take a look at the log file
+6. If you run into an error or are curious, take a look at the log file
 ```js
 cat transcoder.log
 ```

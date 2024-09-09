@@ -13,7 +13,7 @@
       ],
       "AudioList" : [
         {
-          "AudioBitrate" : 160,
+          "AudioBitrate" : 320,
           "AudioCompressionLevel" : -1,
           "AudioDitherMethod" : "auto",
           "AudioEncoder" : "ca_aac",
