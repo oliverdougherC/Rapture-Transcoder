@@ -37,7 +37,7 @@ def load_config(config_file):
     # Expand environment variables in the paths
     for key in ['input_directory', 'output_directory']:
         if key in config:
-            config[key] = os.path.expandvars(config[key])
+            config[key] = os.path.expandvars(os.path.expanduser(config[key]))
     
     return config
 
@@ -132,8 +132,8 @@ def main():
     config = load_config(args.config)
 
     # Get default directories and threads from config
-    default_input_dir = config.get("input_directory", "")
-    default_output_dir = config.get("output_directory", "")
+    default_input_dir = os.path.expandvars(os.path.expanduser(config.get("input_directory", "")))
+    default_output_dir = os.path.expandvars(os.path.expanduser(config.get("output_directory", "")))
     default_threads = config.get("default_threads", 4)  # Use 4 as fallback if not in config
 
     print("Welcome to the Handbrake Transcoder CLI")

@@ -29,12 +29,6 @@ def setup_logging():
     file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
 
-    # Remove the console handler
-    # console_handler = logging.StreamHandler()
-    # console_formatter = logging.Formatter('%(levelname)s - %(message)s')
-    # console_handler.setFormatter(console_formatter)
-    # logger.addHandler(console_handler)
-
     return logger
 
 logger = setup_logging()

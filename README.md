@@ -29,12 +29,14 @@ sudo softwareupdate -l
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-3. Install Python
+3. Run the commands prompted by Homebrew to add it to your PATH
+
+4. Install Python
 ```sh
 brew install python
 ```
 
-4. Install ffmpeg
+5. Install ffmpeg
 ```sh
 brew install ffmpeg
 ```
@@ -45,7 +47,7 @@ brew install ffmpeg
 
 1. Install the Rapture-Transcoder script in whatever directory you want
 ```js
-git clone https://github.com/oliverdougherC/Rapture-Transcoder
+git clone https://github.com/oliverdougherC/Rapture-Transcoder/tree/MacOS
 ```
 2. Navigate to the Rapture-Transcoder directory
 ```sh
@@ -95,7 +97,7 @@ python3 transcode_cli.py -i /path/to/input -o /path/to/output -t number_of_threa
 
 4. Follow the prompts to select your profile.
 
-5. Sit back and relax while the script transcodes your videos.
+5. Wait for the script to transcode your video(s).
 
 6. If you run into an error or are curious, take a look at the log file
 ```js
