@@ -5,11 +5,8 @@ import json
 import threading
 import time
 import subprocess
-import colorama
 import logging
 from logging.handlers import RotatingFileHandler
-
-colorama.init()
 
 # Add the directory containing HT_linuxbuild.py to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))

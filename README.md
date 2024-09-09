@@ -39,6 +39,15 @@ brew install python
 5. Install ffmpeg
 ```sh
 brew install ffmpeg
+
+6. Install HandbrakeCLI
+```sh
+brew install handbrake 
+```
+
+7. Install Tkinter
+```sh
+brew install python-tk
 ```
 
 
@@ -75,10 +84,10 @@ nano Presets/AppleSilicon.json
 
 1. Run the script in CLI mode or GUI mode
 ```sh
-python3 transcode_cli.py
+python3 transcoder_cli.py
 ```
 ```sh
-python3 transcode_gui.py
+python3 transcoder_gui.py
 ```
 
 2. Follow the prompts to select your input and output directories.
