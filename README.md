@@ -25,7 +25,7 @@ sudo softwareupdate -l
 ```
 
 2. Install Homebrew
-```js
+```sh
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
@@ -46,7 +46,7 @@ brew install ffmpeg
 ## Installation
 
 1. Install the Rapture-Transcoder script in whatever directory you want
-```js
+```sh
 git clone https://github.com/oliverdougherC/Rapture-Transcoder/tree/MacOS
 ```
 2. Navigate to the Rapture-Transcoder directory
@@ -63,7 +63,7 @@ nano config.json
 ```
 
 2. If desired, you can tune the transcode settings further in the preset file. Refer to config.json for which file is selected. Default is "AppleSilicon.json"
-```js
+```sh
 nano Presets/AppleSilicon.json
 ```
 
@@ -91,7 +91,7 @@ python3 transcode_gui.py
 * --delete-original = Delete original files after successful transcoding
 
 For example:
-```js
+```sh
 python3 transcode_cli.py -i /path/to/input -o /path/to/output -t number_of_threads --delete-original
 ```
 
