@@ -1,7 +1,7 @@
 Default settings:
 
-* Input = /home/user/media/transcode_input
-* Output = /home/user/media/transcode_output
+* Input = ${HOME}/Documents/media/transcode_input
+* Output = ${HOME}/Documents/media/transcode_output
 * Apple Video Toolbox H.265 10-bit codec
 * Up to 8K max resolution
 * Up to 120fps
