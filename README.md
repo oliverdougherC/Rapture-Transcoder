@@ -47,7 +47,7 @@ brew install ffmpeg
 
 1. Install the Rapture-Transcoder script in whatever directory you want
 ```sh
-git clone -b MacOS --single-branch https://github.com/oliverdougherC/Rapture-Transcoder/tree/MacOS
+git clone -b MacOS --single-branch https://github.com/oliverdougherC/Rapture-Transcoder
 ```
 2. Navigate to the Rapture-Transcoder directory
 ```sh
