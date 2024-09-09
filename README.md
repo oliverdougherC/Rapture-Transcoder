@@ -46,9 +46,9 @@ brew install ffmpeg
 brew install handbrake 
 ```
 
-7. Install Tkinter
+7. Install PyQt6 (only required for the GUI)
 ```sh
-brew install python-tk
+pip3 install PyQt6
 ```
 
 

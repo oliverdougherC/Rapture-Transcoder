@@ -1,23 +1,23 @@
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
-import threading
-import os
 import sys
+import os
 import json
-import platform
-import time
-import queue
 import logging
+import threading
+import queue
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
+                             QLabel, QLineEdit, QPushButton, QSpinBox, QCheckBox, QProgressBar, 
+                             QFileDialog, QMessageBox)
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Add the directory containing HT_linuxbuild.py to the Python path
+# Add the directory containing HT_macbuild.py to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from HT_macbuild import main as transcoder_main_function, command_queue
 
 # Default values
 DEFAULT_CONFIG = "config.json"
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def load_config(config_file):
     try:
@@ -42,191 +42,30 @@ def ensure_directory_exists(path):
         os.makedirs(path)
         logging.info(f"Created directory: {path}")
 
-class TranscoderGUI:
-    def __init__(self, master):
-        self.master = master
-        master.title("Handbrake Transcoder")
+class TranscoderThread(QThread):
+    progress_update = pyqtSignal(str, float)
+    overall_progress_update = pyqtSignal(float)
+    status_update = pyqtSignal(str)
+    finished = pyqtSignal()
 
-        # Load config
-        self.config = load_config(DEFAULT_CONFIG)
-
-        # Get default directories and threads from config
-        self.default_input_dir = self.config.get("input_directory", "")
-        self.default_output_dir = self.config.get("output_directory", "")
-        self.default_threads = self.config.get("default_threads", 4)  # Use 4 as fallback if not in config
-
-        # Convert paths to the correct format for the current OS
-        self.default_input_dir = os.path.expanduser(os.path.expandvars(self.default_input_dir))
-        self.default_output_dir = os.path.expanduser(os.path.expandvars(self.default_output_dir))
-
-        # Ensure default directories exist (only if they're not empty)
-        if self.default_input_dir:
-            ensure_directory_exists(self.default_input_dir)
-        if self.default_output_dir:
-            ensure_directory_exists(self.default_output_dir)
-
-        self.delete_original_var = tk.BooleanVar()
-        self.total_files = 0
-        self.processed_files = 0
-        self.current_progress = 0
-        self.current_file = None
-        self.is_transcoding = False
-        self.is_paused = False
+    def __init__(self, input_dir, output_dir, config_file, threads, delete_original):
+        super().__init__()
+        self.input_dir = input_dir
+        self.output_dir = output_dir
+        self.config_file = config_file
+        self.threads = threads
+        self.delete_original = delete_original
         self.cancel_flag = False
-        self.create_widgets()
-        self.progress_queue = queue.Queue()
+        self.file_count = 0
+        self.files_processed = 0
 
-    def create_widgets(self):
-        # Input Directory
-        self.input_label = tk.Label(self.master, text="Input Directory:")
-        self.input_label.grid(row=0, column=0, sticky="e")
-        self.input_entry = tk.Entry(self.master, width=50)
-        self.input_entry.insert(0, self.default_input_dir)
-        self.input_entry.grid(row=0, column=1)
-        self.input_button = tk.Button(self.master, text="Browse", command=self.browse_input)
-        self.input_button.grid(row=0, column=2)
-
-        # Output Directory
-        self.output_label = tk.Label(self.master, text="Output Directory:")
-        self.output_label.grid(row=1, column=0, sticky="e")
-        self.output_entry = tk.Entry(self.master, width=50)
-        self.output_entry.insert(0, self.default_output_dir)
-        self.output_entry.grid(row=1, column=1)
-        self.output_button = tk.Button(self.master, text="Browse", command=self.browse_output)
-        self.output_button.grid(row=1, column=2)
-
-        # Config File
-        self.config_label = tk.Label(self.master, text="Config File:")
-        self.config_label.grid(row=2, column=0, sticky="e")
-        self.config_entry = tk.Entry(self.master, width=50)
-        self.config_entry.insert(0, DEFAULT_CONFIG)
-        self.config_entry.grid(row=2, column=1)
-        self.config_button = tk.Button(self.master, text="Browse", command=self.browse_config)
-        self.config_button.grid(row=2, column=2)
-
-        # Threads
-        self.threads_label = tk.Label(self.master, text="Number of Threads per Task:")
-        self.threads_label.grid(row=3, column=0, sticky="e")
-        self.threads_spinbox = ttk.Spinbox(self.master, from_=1, to=16, width=5)
-        self.threads_spinbox.set(self.default_threads)
-        self.threads_spinbox.grid(row=3, column=1, sticky="w")
-
-        # Delete Original Checkbox
-        self.delete_original_check = tk.Checkbutton(self.master, text="Delete original files after successful transcoding", variable=self.delete_original_var)
-        self.delete_original_check.grid(row=4, column=1, sticky="w")
-
-        # Button Frame
-        self.button_frame = tk.Frame(self.master)
-        self.button_frame.grid(row=5, column=1, columnspan=2, pady=5)
-
-        # Start Button
-        self.start_button = tk.Button(self.button_frame, text="Start Transcoding", command=self.start_transcoding)
-        self.start_button.pack(side=tk.LEFT, padx=5)
-
-        # Pause Button
-        self.pause_button = tk.Button(self.button_frame, text="Pause", command=self.toggle_pause, state=tk.DISABLED)
-        self.pause_button.pack(side=tk.LEFT, padx=5)
-
-        # Cancel Button
-        self.cancel_button = tk.Button(self.button_frame, text="Cancel", command=self.cancel_transcoding, state=tk.DISABLED)
-        self.cancel_button.pack(side=tk.LEFT, padx=5)
-
-        # Progress Bar
-        self.progress_bar = ttk.Progressbar(self.master, length=300, mode='determinate')
-        self.progress_bar.grid(row=6, column=1, columnspan=2, pady=5)
-
-        # Progress Percentage
-        self.progress_percentage = tk.StringVar()
-        self.progress_percentage.set("0%")
-        self.percentage_label = tk.Label(self.master, textvariable=self.progress_percentage)
-        self.percentage_label.grid(row=6, column=3, pady=5)
-
-        # File Count
-        self.file_count = tk.StringVar()
-        self.file_count.set("0 / 0 files processed")
-        self.file_count_label = tk.Label(self.master, textvariable=self.file_count)
-        self.file_count_label.grid(row=7, column=1, columnspan=2, pady=5)
-
-        # Status Label
-        self.status = tk.StringVar()
-        self.status_label = tk.Label(self.master, textvariable=self.status)
-        self.status_label.grid(row=8, column=1, columnspan=2, pady=5)
-
-    def browse_input(self):
-        directory = filedialog.askdirectory(initialdir=os.path.expandvars(self.input_entry.get()))
-        if directory:
-            self.input_entry.delete(0, tk.END)
-            self.input_entry.insert(0, directory)
-
-    def browse_output(self):
-        directory = filedialog.askdirectory(initialdir=os.path.expandvars(self.output_entry.get()))
-        if directory:
-            self.output_entry.delete(0, tk.END)
-            self.output_entry.insert(0, directory)
-
-    def browse_config(self):
-        config_file = filedialog.askopenfilename(initialdir=os.path.dirname(self.config_entry.get()),
-                                                 filetypes=[("JSON files", "*.json")])
-        if config_file:
-            self.config_entry.delete(0, tk.END)
-            self.config_entry.insert(0, config_file)
-
-    def start_transcoding(self):
-        input_dir = os.path.expandvars(self.input_entry.get())
-        output_dir = os.path.expandvars(self.output_entry.get())
-        config_file = self.config_entry.get()
-        threads = int(self.threads_spinbox.get())  # Ensure this is an integer
-
-        if not input_dir or not output_dir or not config_file:
-            messagebox.showerror("Error", "Please fill in all fields")
-            return
-
-        # Ensure directories exist
-        ensure_directory_exists(input_dir)
-        ensure_directory_exists(output_dir)
-
-        # Check if input directory is empty
-        if not os.listdir(input_dir):
-            messagebox.showerror("Error", "Input directory is empty")
-            return
-
-        delete_original = self.delete_original_var.get()
-
-        # Count total files
-        self.total_files = sum(1 for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f)) and any(f.lower().endswith(ext) for ext in self.config.get('file_types', [])))
-        self.processed_files = 0
-        self.current_file = None
-        self.current_progress = 0
-        logging.debug(f"Total files to process: {self.total_files}")
-        self.update_initial_progress()
-
-        self.is_transcoding = True
-        self.cancel_flag = False
-        self.start_button.config(state=tk.DISABLED)
-        self.pause_button.config(state=tk.NORMAL)
-        self.cancel_button.config(state=tk.NORMAL)
-        threading.Thread(target=self.run_transcoding, args=(input_dir, output_dir, config_file, threads, delete_original)).start()
-
-    def toggle_pause(self):
-        self.is_paused = not self.is_paused
-        if self.is_paused:
-            self.pause_button.config(text="Resume")
-            self.status.set("Transcoding paused")
-            command_queue.put('p')
-        else:
-            self.pause_button.config(text="Pause")
-            self.status.set("Transcoding resumed")
-            command_queue.put('r')
-
-    def cancel_transcoding(self):
-        self.cancel_flag = True
-        self.status.set("Cancelling transcoding...")
-
-    def run_transcoding(self, input_dir, output_dir, config_file, threads, delete_original):
-        self.status.set("Transcoding in progress...")
-        
+    def run(self):
         def progress_callback(file_processed, progress):
-            self.master.after(0, self.update_progress, file_processed, progress)
+            self.progress_update.emit(file_processed, progress)
+            if progress == 100:
+                self.files_processed += 1
+                overall_progress = (self.files_processed / self.file_count) * 100
+                self.overall_progress_update.emit(overall_progress)
             return self.cancel_flag
 
         def command_callback():
@@ -236,59 +75,188 @@ class TranscoderGUI:
                 return None
 
         try:
-            sys.argv = [
-                sys.argv[0],
-                "-c", config_file,
-                "-i", input_dir,
-                "-o", output_dir,
-                "-t", str(threads)  # Ensure threads is passed as a string
-            ]
-            if delete_original:
-                sys.argv.append("--delete-original")
+            # Count the number of files to be processed
+            self.file_count = sum(1 for f in os.listdir(self.input_dir) if os.path.isfile(os.path.join(self.input_dir, f)))
             
-            logging.debug(f"Launching transcoder with arguments: {sys.argv}")
-            
-            transcoder_main_function(input_dir, output_dir, progress_callback, command_callback, delete_original)
+            transcoder_main_function(self.input_dir, self.output_dir, progress_callback, command_callback, self.delete_original)
         except Exception as e:
-            logging.error(f"Error during transcoding: {str(e)}", exc_info=True)
-            self.status.set(f"Error during transcoding: {str(e)}")
-        
-        self.is_transcoding = False
-        self.master.after(0, self.update_buttons)
-        
-        if self.cancel_flag:
-            self.status.set("Transcoding cancelled")
+            self.status_update.emit(f"Error during transcoding: {str(e)}")
+        finally:
+            self.finished.emit()
+
+    def cancel(self):
+        self.cancel_flag = True
+
+class TranscoderGUI(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.config = load_config(DEFAULT_CONFIG)
+        self.init_ui()
+
+    def init_ui(self):
+        self.setWindowTitle("Handbrake Transcoder")
+        self.setGeometry(100, 100, 600, 400)
+
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout = QVBoxLayout(central_widget)
+
+        # Input Directory
+        input_layout = QHBoxLayout()
+        input_layout.addWidget(QLabel("Input Directory:"))
+        self.input_entry = QLineEdit(self.config.get("input_directory", ""))
+        input_layout.addWidget(self.input_entry)
+        input_button = QPushButton("Browse")
+        input_button.clicked.connect(self.browse_input)
+        input_layout.addWidget(input_button)
+        layout.addLayout(input_layout)
+
+        # Output Directory
+        output_layout = QHBoxLayout()
+        output_layout.addWidget(QLabel("Output Directory:"))
+        self.output_entry = QLineEdit(self.config.get("output_directory", ""))
+        output_layout.addWidget(self.output_entry)
+        output_button = QPushButton("Browse")
+        output_button.clicked.connect(self.browse_output)
+        output_layout.addWidget(output_button)
+        layout.addLayout(output_layout)
+
+        # Config File
+        config_layout = QHBoxLayout()
+        config_layout.addWidget(QLabel("Config File:"))
+        self.config_entry = QLineEdit(DEFAULT_CONFIG)
+        config_layout.addWidget(self.config_entry)
+        config_button = QPushButton("Browse")
+        config_button.clicked.connect(self.browse_config)
+        config_layout.addWidget(config_button)
+        layout.addLayout(config_layout)
+
+        # Threads
+        threads_layout = QHBoxLayout()
+        threads_layout.addWidget(QLabel("Number of Threads per Task:"))
+        self.threads_spinbox = QSpinBox()
+        self.threads_spinbox.setRange(1, 16)
+        self.threads_spinbox.setValue(self.config.get("default_threads", 4))
+        threads_layout.addWidget(self.threads_spinbox)
+        layout.addLayout(threads_layout)
+
+        # Delete Original Checkbox
+        self.delete_original_check = QCheckBox("Delete original files after successful transcoding")
+        layout.addWidget(self.delete_original_check)
+
+        # Buttons
+        button_layout = QHBoxLayout()
+        self.start_button = QPushButton("Start Transcoding")
+        self.start_button.clicked.connect(self.start_transcoding)
+        button_layout.addWidget(self.start_button)
+
+        self.pause_button = QPushButton("Pause")
+        self.pause_button.clicked.connect(self.toggle_pause)
+        self.pause_button.setEnabled(False)
+        button_layout.addWidget(self.pause_button)
+
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.clicked.connect(self.cancel_transcoding)
+        self.cancel_button.setEnabled(False)
+        button_layout.addWidget(self.cancel_button)
+
+        layout.addLayout(button_layout)
+
+        # Current File Progress Bar
+        self.current_progress_bar = QProgressBar()
+        layout.addWidget(self.current_progress_bar)
+
+        # Overall Progress Bar (initially hidden)
+        self.overall_progress_bar = QProgressBar()
+        self.overall_progress_bar.setVisible(False)
+        layout.addWidget(self.overall_progress_bar)
+
+        # Status Label
+        self.status_label = QLabel("Ready to start transcoding")
+        layout.addWidget(self.status_label)
+
+        self.show()
+
+    def browse_input(self):
+        directory = QFileDialog.getExistingDirectory(self, "Select Input Directory")
+        if directory:
+            self.input_entry.setText(directory)
+
+    def browse_output(self):
+        directory = QFileDialog.getExistingDirectory(self, "Select Output Directory")
+        if directory:
+            self.output_entry.setText(directory)
+
+    def browse_config(self):
+        file_name, _ = QFileDialog.getOpenFileName(self, "Select Config File", "", "JSON Files (*.json)")
+        if file_name:
+            self.config_entry.setText(file_name)
+
+    def start_transcoding(self):
+        input_dir = self.input_entry.text()
+        output_dir = self.output_entry.text()
+        config_file = self.config_entry.text()
+        threads = self.threads_spinbox.value()
+        delete_original = self.delete_original_check.isChecked()
+
+        if not input_dir or not output_dir or not config_file:
+            QMessageBox.critical(self, "Error", "Please fill in all fields")
+            return
+
+        ensure_directory_exists(input_dir)
+        ensure_directory_exists(output_dir)
+
+        file_count = sum(1 for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f)))
+        if file_count == 0:
+            QMessageBox.critical(self, "Error", "Input directory is empty")
+            return
+
+        self.start_button.setEnabled(False)
+        self.pause_button.setEnabled(True)
+        self.cancel_button.setEnabled(True)
+
+        # Show overall progress bar if there's more than one file
+        self.overall_progress_bar.setVisible(file_count > 1)
+
+        self.transcoder_thread = TranscoderThread(input_dir, output_dir, config_file, threads, delete_original)
+        self.transcoder_thread.progress_update.connect(self.update_progress)
+        self.transcoder_thread.overall_progress_update.connect(self.update_overall_progress)
+        self.transcoder_thread.status_update.connect(self.update_status)
+        self.transcoder_thread.finished.connect(self.transcoding_finished)
+        self.transcoder_thread.start()
+
+    def toggle_pause(self):
+        if self.pause_button.text() == "Pause":
+            self.pause_button.setText("Resume")
+            self.status_label.setText("Transcoding paused")
+            command_queue.put('p')
         else:
-            self.status.set("Transcoding completed!")
+            self.pause_button.setText("Pause")
+            self.status_label.setText("Transcoding resumed")
+            command_queue.put('r')
+
+    def cancel_transcoding(self):
+        self.transcoder_thread.cancel()
+        self.status_label.setText("Cancelling transcoding...")
 
     def update_progress(self, file_processed, progress):
-        if file_processed != self.current_file:
-            self.current_file = file_processed
-            if self.processed_files < self.total_files:
-                self.processed_files += 1
-        self.current_progress = progress
-        
-        if self.total_files > 0:
-            overall_progress = ((self.processed_files - 1) * 100 + progress) / self.total_files
-            self.progress_bar['value'] = overall_progress
-            self.progress_percentage.set(f"{overall_progress:.1f}%")
-        
-        self.file_count.set(f"Processing file {self.processed_files}/{self.total_files}")
-        self.status.set(f"Processing: {file_processed} - {progress:.1f}%")
+        self.current_progress_bar.setValue(int(progress))
+        self.status_label.setText(f"Processing: {file_processed} - {progress:.1f}%")
 
-    def update_initial_progress(self):
-        if self.total_files > 0:
-            self.progress_bar['value'] = 0
-            self.progress_percentage.set("0.0%")
-        self.file_count.set(f"Processing file 0/{self.total_files}")
-        self.status.set("Ready to start transcoding")
+    def update_overall_progress(self, progress):
+        self.overall_progress_bar.setValue(int(progress))
 
-    def update_buttons(self):
-        self.start_button.config(state=tk.NORMAL)
-        self.pause_button.config(state=tk.DISABLED)
-        self.cancel_button.config(state=tk.DISABLED)
+    def update_status(self, status):
+        self.status_label.setText(status)
+
+    def transcoding_finished(self):
+        self.start_button.setEnabled(True)
+        self.pause_button.setEnabled(False)
+        self.cancel_button.setEnabled(False)
+        self.status_label.setText("Transcoding completed!")
+        self.overall_progress_bar.setVisible(False)
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    gui = TranscoderGUI(root)
-    root.mainloop()
+    app = QApplication(sys.argv)
+    gui = TranscoderGUI()
+    sys.exit(app.exec())

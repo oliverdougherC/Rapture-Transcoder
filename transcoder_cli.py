@@ -11,7 +11,7 @@ from logging.handlers import RotatingFileHandler
 # Add the directory containing HT_linuxbuild.py to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from HT_macbuild import main as transcoder_main_function
+from HT_macbuild import main as transcoder_main_function, load_config
 
 # Default values
 DEFAULT_CONFIG_FILE = "config.json"
@@ -169,9 +169,8 @@ def main():
     setup_logging(log_file)
 
     print("Starting transcoding and verification process...")
-    transcoder_main_function(args.input, args.output, None, None, delete_original)
+    transcoder_main_function(args.input, args.output, None, delete_original, args.threads)
     print("Transcoding and verification completed!")
-    
 
 if __name__ == "__main__":
     main()
