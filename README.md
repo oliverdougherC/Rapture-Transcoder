@@ -70,6 +70,8 @@ nano config.json
 ```sh
 python3 run_transcode.py
 ```
+The first time you run the script, it will ask you to select your input and output directories. If you do not specify the input and output directories, the script will use the default directories specified in the config.json file. If these directories do not exist, the script will create them.
+
 2. Follow the prompts to select your input and output directories. Alternatively, you can add the -i and -o flags to the launch command to set the input and output directories. You can also add the -t flag to set the number of threads to use.
 ```sh
 python3 run_transcode.py -i /path/to/input -o /path/to/output -t number_of_threads --delete-original
