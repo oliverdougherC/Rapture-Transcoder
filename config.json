@@ -10,7 +10,7 @@
     "encoder_preset": "quality",
     "file_types": [".mkv", ".mp4", ".mov", ".avi"],
     "max_workers": 3,
-    "default_threads": 4,
+    "default_threads": 16,
     "email": {
         "sender": "your_email@example.com",
         "recipient": "recipient@example.com",

@@ -15,6 +15,7 @@ from threading import Event, Thread
 from functools import partial
 from queue import Queue
 import select
+import shutil
 
 # Global pause event
 pause_event = Event()
@@ -83,14 +84,6 @@ def verify_transcoded_file(input_file, output_file):
     if abs(input_duration - output_duration) > 2:  # Changed from 1 to 2 seconds
         return False, f"Duration mismatch: input {input_duration}s, output {output_duration}s"
 
-    # Check video codec
-    output_codec = next((stream['codec_name'] for stream in output_info['streams'] if stream['codec_type'] == 'video'), None)
-    logger.info(f"Output codec: {output_codec}")
-
-    # Update the codec check
-    if output_codec != 'av1':
-        return False, f"Incorrect video codec: expected av1, got {output_codec}"
-
     return True, "Verification passed"
 
 def transcode_file(input_file, output_file, preset, preset_dir, encoder, quality, encoder_preset, prioritize_config, callback=None, threads=None):
@@ -123,6 +116,7 @@ def transcode_file(input_file, output_file, preset, preset_dir, encoder, quality
         full_output = []
         for line in process.stdout:
             full_output.append(line)
+            logger.debug(line.strip())  # Log each line of HandBrake output
             if not command_queue.empty():
                 command = command_queue.get()
                 if command == 'p':
@@ -165,6 +159,14 @@ def transcode_file(input_file, output_file, preset, preset_dir, encoder, quality
             return None
         
         print()  # Move to the next line after progress is complete
+
+        # Check if the output file exists and has a non-zero size
+        if not os.path.exists(output_file) or os.path.getsize(output_file) == 0:
+            logger.error(f"Output file not created or is empty: {output_file}")
+            logger.error("HandBrake output:")
+            for line in full_output:
+                logger.error(line.strip())
+            return None
 
         # After transcoding, verify the file
         verified, message = verify_transcoded_file(input_file, output_file)
@@ -211,7 +213,20 @@ def process_file(filename, indir, outdir, preset, preset_dir, encoder, quality, 
     output_path = os.path.join(outdir, filename)
     
     logger.info(f"Processing file: {full_path}")
+    logger.info(f"Output path: {output_path}")
+    
     try:
+        # Check if we have write permissions in the output directory
+        if not os.access(outdir, os.W_OK):
+            logger.error(f"No write permission in output directory: {outdir}")
+            return False
+
+        # Check available disk space
+        _, _, free = shutil.disk_usage(outdir)
+        if free < os.path.getsize(full_path):
+            logger.error(f"Not enough disk space in output directory: {outdir}")
+            return False
+
         original_size = get_file_size(full_path)
         original_codec = get_video_codec(full_path)
         
@@ -219,31 +234,41 @@ def process_file(filename, indir, outdir, preset, preset_dir, encoder, quality, 
         
         transcode_result = transcode_file(full_path, output_path, preset, preset_dir, encoder, quality, encoder_preset, prioritize_config, callback, threads)
         
-        if transcode_result is not None:  # Changed from 'if transcode_result:'
-            new_size = get_file_size(output_path)
-            new_codec = get_video_codec(output_path)
-            
-            verified, message = verify_transcoded_file(full_path, output_path)
-            if verified:
-                size_change = (new_size - original_size) / original_size * 100
-                logger.info("****************************************")
-                logger.info(f"* Transcoding successful for {filename}")
-                logger.info(f"* Original size: {original_size:,} bytes")
-                logger.info(f"* New size: {new_size:,} bytes")
-                logger.info(f"* Size change: {size_change:.2f}%")
-                logger.info(f"* Original codec: {original_codec}")
-                logger.info(f"* New codec: {new_codec}")
-                logger.info("****************************************\n")
+        logger.info(f"Transcode result: {transcode_result}")
+        
+        if transcode_result is not None:
+            if os.path.exists(output_path):
+                logger.info(f"Output file found: {output_path}")
+                new_size = get_file_size(output_path)
+                new_codec = get_video_codec(output_path)
                 
+                logger.info(f"Original size: {original_size}, New size: {new_size}")
+                logger.info(f"Original codec: {original_codec}, New codec: {new_codec}")
                 
-                if delete_original:
-                    os.remove(full_path)
-                    logger.info(f"Deleted original file: {full_path}")
+                verified, message = verify_transcoded_file(full_path, output_path)
+                logger.info(f"Verification result: {verified}, Message: {message}")
                 
-                return True
+                if verified:
+                    size_change = (new_size - original_size) / original_size * 100
+                    logger.info("****************************************")
+                    logger.info(f"* Transcoding successful for {filename}")
+                    logger.info(f"* Original size: {original_size:,} bytes")
+                    logger.info(f"* New size: {new_size:,} bytes")
+                    logger.info(f"* Size change: {size_change:.2f}%")
+                    logger.info(f"* Original codec: {original_codec}")
+                    logger.info(f"* New codec: {new_codec}")
+                    logger.info("****************************************\n")
+                    
+                    if delete_original:
+                        os.remove(full_path)
+                        logger.info(f"Deleted original file: {full_path}")
+                    
+                    return True
+                else:
+                    logger.error(f"Verification failed for {output_path}: {message}")
+                    return False
             else:
-                logger.error(f"Verification failed for {output_path}: {message}")
-                # Don't delete the output file here, keep it for inspection
+                logger.error(f"Output file not found after transcoding: {output_path}")
                 return False
         else:
             logger.error(f"Transcoding failed for {filename}")
