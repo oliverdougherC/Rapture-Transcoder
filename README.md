@@ -2,7 +2,7 @@ Default settings:
 
 * Input = /home/user/media/transcode_input
 * Output = /home/user/media/transcode_output
-* AV1 10bit nvenc video codec (Please change in config.json if not supported by your hardware)
+* H.264 video codec (Change in config.json. More in "Configuration" section)
 * Up to 8K max resolution
 * Up to 120fps
 * All English & Japanese audio
@@ -26,7 +26,7 @@ sudo apt install handbrake-cli
 2. Install Python on your system. You can this by running 
 ```sh
 sudo apt install python3
-
+```
 3. Install ffmpeg
 ```sh
 sudo apt install ffmpeg
@@ -52,13 +52,15 @@ cd Rapture-Transcoder
 <!-- CONFIGURATION -->
 ## Configuration
 
-1. If desired, change the transcoding settings in the "Streaming.json" and general settings in the "config.json" files
+1. If desired, change the transcoding settings in the *H.264.json* and general settings in the *config.json* files. 
 ```sh
-nano Streaming.json
+nano H.264.json
 ```
 ```sh
 nano config.json
 ```
+
+2. The default codec is H.264 as to maximize compatibility. Take a look at the presets in the "Presets" folder in order to select which preset is best suited for your needs. You may also change the setting "prioritize_config" to *true* in *config.json* in order to prioritize the config settings over the preset settings. This lets you change the encoder, quality, and encoder preset in config.json. If you would like to fine tune your transcoding settings, I would recommend creating your own preset using the Handbrake GUI and then exporting it as a JSON file and placing it in the "Presets" folder. This will allow you to select your own preset in the config.json file.
 
 
 <!-- USAGE -->
