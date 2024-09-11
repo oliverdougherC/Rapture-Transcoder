@@ -42,7 +42,7 @@ sudo apt update && sudo apt upgrade -y
 
 2. Install the Rapture-Transcoder script by running 
 ```sh
-git clone https://github.com/oliverdougherC/Rapture-Transcoder
+git clone -b Linux --single-branch https://github.com/oliverdougherC/Rapture-Transcoder
 ```
 3. Navigate to the Rapture-Transcoder directory
 ```sh
