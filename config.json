@@ -1,13 +1,16 @@
 {
-    "input_directory": "/home/{USER}/media/transcode_input",
-    "output_directory": "/home/{USER}/media/transcode_output",
+    "input_directory": "~/media/transcode_input",
+    "output_directory": "~/media/transcode_output",
     "presets": {
-        "default": "Streaming.json",
-        ".mkv": "HighQuality.json",
-        ".avi": "FastConversion.json"
+        "default": "H.264"
     },
-    "file_types": [".mkv", ".mp4", ".mov", ".avi", ".wmv", ".flv", ".webm"],
+    "preset_directory": "/Presets",
+    "encoder": "av1",
+    "quality": "22",
+    "encoder_preset": "quality",
+    "file_types": [".mkv", ".mp4", ".mov", ".avi"],
     "max_workers": 3,
+    "default_threads": 4,
     "email": {
         "sender": "your_email@example.com",
         "recipient": "recipient@example.com",
@@ -15,5 +18,6 @@
         "smtp_port": 587,
         "username": "your_username",
         "password": "your_password"
-    }
+    },
+    "prioritize_config": false
 }

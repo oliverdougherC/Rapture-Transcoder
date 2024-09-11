@@ -2,7 +2,7 @@ Default settings:
 
 * Input = /home/user/media/transcode_input
 * Output = /home/user/media/transcode_output
-* AV1 10bit nvenc video codec
+* AV1 10bit nvenc video codec (Please change in config.json if not supported by your hardware)
 * Up to 8K max resolution
 * Up to 120fps
 * All English & Japanese audio
@@ -26,6 +26,10 @@ sudo apt install handbrake-cli
 2. Install Python on your system. You can this by running 
 ```sh
 sudo apt install python3
+
+3. Install ffmpeg
+```sh
+sudo apt install ffmpeg
 ```
 
 <!-- INSTALLATION -->
