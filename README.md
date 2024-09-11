@@ -66,16 +66,13 @@ nano config.json
 <!-- USAGE -->
 ## Usage
 
-1. Run the script in CLI mode or GUI mode
+1. Run the script
 ```sh
-python3 transcode_cli.py
-```
-```sh
-python3 transcode_gui.py
+python3 run_transcode.py
 ```
 2. Follow the prompts to select your input and output directories. Alternatively, you can add the -i and -o flags to the launch command to set the input and output directories. You can also add the -t flag to set the number of threads to use.
 ```sh
-python3 transcode_cli.py -i /path/to/input -o /path/to/output -t number_of_threads
+python3 run_transcode.py -i /path/to/input -o /path/to/output -t number_of_threads
 ```
 3. Follow the prompts to select your profile.
 4. Sit back and relax while the script transcodes your videos.
