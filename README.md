@@ -13,7 +13,7 @@ Default settings:
 <!-- ABOUT THE SCRIPT -->
 ## About the Script
 
-Rapture-Transcoder is a simple and effecient way to transcode video files. It uses HandbrakeCLI under the hood to transcode video files. It is designed to be run as a schedualed task or manually. It was initially designed to be a CLI program, but I have since added a GUI to make it more user friendly. I am not a python programmer, so forgive me if this is not up to python standards.
+Rapture-Transcoder is a simple and effecient way to transcode video files. It uses HandbrakeCLI under the hood to transcode video files. It is designed to be run as a schedualed task or manually. I am not a python programmer, so forgive me if this is not up to python standards.
 
 
 <!-- PREREQUISITES -->
