@@ -4,7 +4,7 @@
     "presets": {
         "default": "AppleSilicon.json"
     },
-    "preset_directory": "/Presets",
+    "preset_directory": "Presets",
     "encoder": "vt_h265_10bit",
     "quality": "22",
     "encoder_preset": "quality",
