@@ -2,9 +2,9 @@
     "input_directory": "~/media/transcode_input",
     "output_directory": "~/media/transcode_output",
     "presets": {
-        "default": "H.264"
+        "default": "H.264.json"
     },
-    "preset_directory": "/Presets",
+    "preset_directory": "Presets",
     "encoder": "av1",
     "quality": "22",
     "encoder_preset": "quality",
