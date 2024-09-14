@@ -1,23 +1,9 @@
 {
-    "input_directory": "~/media/transcode_input",
-    "output_directory": "~/media/transcode_output",
-    "presets": {
-        "default": "H.264.json"
-    },
-    "preset_directory": "Presets",
-    "encoder": "av1",
-    "quality": "22",
-    "encoder_preset": "quality",
-    "file_types": [".mkv", ".mp4", ".mov", ".avi"],
-    "max_workers": 3,
-    "default_threads": 16,
-    "email": {
-        "sender": "your_email@example.com",
-        "recipient": "recipient@example.com",
-        "smtp_server": "smtp.example.com",
-        "smtp_port": 587,
-        "username": "your_username",
-        "password": "your_password"
-    },
-    "prioritize_config": false
+    "input_directory": "~/media/trans_in",
+    "output_directory": "~/media/trans_out",
+    "file_extensions": [".mp4", ".avi", ".mkv"],
+    "quality": 18,
+    "audio_bitrate": 0,
+    "video_bitrate": 0,
+    "video_codec": "x264"
 }
