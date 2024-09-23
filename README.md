@@ -21,7 +21,7 @@ sudo apt install python3
 ```sh
 sudo apt install ffmpeg
 ```
-3. Add ffmpeg to your PATH, follow this guide for windows
+3. (WINDOWS ONLY) Add ffmpeg to your PATH, follow this guide:
 ```sh
 https://phoenixnap.com/kb/ffmpeg-windows
 ```

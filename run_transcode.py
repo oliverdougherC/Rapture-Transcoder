@@ -39,31 +39,40 @@ def setup_logging():
     return logger
 
 def load_config():
+    logger = logging.getLogger()
     logger.info("Loading config")
-    config_path = 'config.json'
     
-    # Check if config file exists in the current directory
+    # Get the directory of the current script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Construct the path to the config file
+    config_path = os.path.join(script_dir, 'config.json')
+    
+    logger.debug(f"Looking for config file at: {config_path}")
+    
     if not os.path.exists(config_path):
         logger.error(f"Config file not found: {config_path}")
-        logger.info(f"Current working directory: {os.getcwd()}")
+        logger.info(f"Script directory: {script_dir}")
         logger.info("Please ensure config.json is in the same directory as the script.")
         raise FileNotFoundError(f"Config file not found: {config_path}")
     
-    with open(config_path, 'r') as config_file:
-        content = config_file.read()
-        if not content.strip():
-            logger.error(f"Config file is empty: {config_path}")
-            raise ValueError(f"Config file is empty: {config_path}")
+    try:
+        with open(config_path, 'r') as config_file:
+            config = json.load(config_file)
+            
+        # Validate and process config values
+        config['video_codec'] = config.get('video_codec', '').lower()
+        config['video_bitrate'] = int(config.get('video_bitrate', 0))
+        config['audio_bitrate'] = int(config.get('audio_bitrate', 0))
         
-        try:
-            config = json.loads(content)
-            config['video_codec'] = config['video_codec'].lower()
-            config['video_bitrate'] = int(config.get('video_bitrate', 0))
-            config['audio_bitrate'] = int(config.get('audio_bitrate', 0))
-            return config
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in config file: {e}")
-            raise
+        logger.info("Config loaded successfully")
+        return config
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in config file: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Error reading config file: {e}")
+        raise
 
 def check_ffmpeg_installed():
     return shutil.which("ffmpeg") is not None
@@ -475,10 +484,12 @@ if __name__ == "__main__":
         shutdown_flag.set()  # Ensure the input thread stops
         input_thread.join(timeout=1)  # Wait for the input thread to finish
         if shutdown_flag.is_set():
-            logger.info("Script execution interrupted by user.")
+            logger.info("Script execution completed.")
         elif not failed_files:
             logger.info("Script execution completed. All files successfully transcoded.")
         else:
             logger.info("Script execution completed. Some files encountered errors:")
             for failed_file in failed_files:
                 logger.info(f"- {failed_file}")
+        
+        input("Press [Enter] to continue...")
