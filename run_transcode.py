@@ -42,8 +42,11 @@ def load_config():
     logger.info("Loading config")
     config_path = 'config.json'
     
+    # Check if config file exists in the current directory
     if not os.path.exists(config_path):
         logger.error(f"Config file not found: {config_path}")
+        logger.info(f"Current working directory: {os.getcwd()}")
+        logger.info("Please ensure config.json is in the same directory as the script.")
         raise FileNotFoundError(f"Config file not found: {config_path}")
     
     with open(config_path, 'r') as config_file:
@@ -74,11 +77,18 @@ def get_video_info(file_path):
         "-show_streams",
         file_path
     ]
+    logger.debug(f"Running ffprobe command: {' '.join(command)}")
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
+        logger.debug(f"ffprobe stdout: {result.stdout}")
         return json.loads(result.stdout)
     except subprocess.CalledProcessError as e:
         logger.error(f"Error running ffprobe: {e}")
+        logger.error(f"ffprobe stderr: {e.stderr}")
+        return None
+    except json.JSONDecodeError as e:
+        logger.error(f"Error decoding ffprobe output: {e}")
+        logger.error(f"Raw ffprobe output: {result.stdout}")
         return None
 
 def human_readable_size(size_in_bytes):
@@ -239,8 +249,17 @@ def get_encoder(config_encoder, gpu_type):
 
 def transcode_video(input_file, output_file, config):
     logger.debug(f"Starting transcoding of {input_file}")
+    if not os.path.exists(input_file):
+        logger.error(f"Input file does not exist: {input_file}")
+        return False
+
     if not check_ffmpeg_installed():
         logger.error("FFmpeg is not installed. Please install it and try again.")
+        return False
+
+    input_info = get_video_info(input_file)
+    if input_info is None:
+        logger.error(f"Unable to get video information for {input_file}. Skipping this file.")
         return False
 
     gpu_type = detect_gpu()
@@ -262,7 +281,6 @@ def transcode_video(input_file, output_file, config):
         command.extend(["-bufsize", f"{config['video_bitrate'] * 2}k"])
     else:
         # When video_bitrate is 0, use the input bitrate
-        input_info = get_video_info(input_file)
         input_video_stream = next(s for s in input_info['streams'] if s['codec_type'] == 'video')
         input_bitrate = input_video_stream.get('bit_rate')
         if input_bitrate:
@@ -378,10 +396,16 @@ def process_directory(config):
     files_to_process = []
     for root, dirs, files in os.walk(input_dir):
         for file in files:
+            logger.debug(f"Checking file: {file}")
+            # Skip hidden files and macOS metadata files
+            if file.startswith('.') or file.startswith('._'):
+                logger.info(f"Skipping hidden or metadata file: {file}")
+                continue
             if any(file.lower().endswith(ext.lower()) for ext in extensions):
                 input_path = os.path.join(root, file)
                 rel_path = os.path.relpath(input_path, input_dir)
                 output_path = os.path.join(output_dir, rel_path)
+                logger.debug(f"Adding file to process: {input_path}")
                 files_to_process.append((input_path, output_path))
 
     total_files = len(files_to_process)
