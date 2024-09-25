@@ -5,9 +5,9 @@ import json
 import logging
 import shutil
 import re
-import time
 import threading
-import queue
+import time
+import requests
 
 shutdown_flag = threading.Event()
 
@@ -64,6 +64,10 @@ def load_config():
         config['video_codec'] = config.get('video_codec', '').lower()
         config['video_bitrate'] = int(config.get('video_bitrate', 0))
         config['audio_bitrate'] = int(config.get('audio_bitrate', 0))
+        config['use_media_detection'] = config.get('use_media_detection', False)
+        config['omdb_api_key'] = config.get('omdb_api_key', '')
+        config['movie_output_directory'] = config.get('movie_output_directory', config['output_directory'])
+        config['tv_output_directory'] = config.get('tv_output_directory', config['output_directory'])
         
         logger.info("Config loaded successfully")
         return config
@@ -392,15 +396,47 @@ def parse_progress(output, duration):
         return {'time': time, 'frame': frame, 'percentage': percentage}
     return None
 
+def detect_media_type(title, config):
+    if not config.get('use_media_detection', False):
+        return None
+
+    api_key = config.get('omdb_api_key')
+    if not api_key:
+        return None
+
+    # Remove year and parentheses from the end of the title
+    clean_title = re.sub(r'\s*\(\d{4}\)$', '', title)
+    # Remove any remaining parentheses and their contents
+    clean_title = re.sub(r'\s*\([^)]*\)', '', clean_title)
+    # Remove any non-alphanumeric characters except spaces and hyphens
+    clean_title = re.sub(r'[^\w\s-]', '', clean_title).strip()
+
+    url = f"http://www.omdbapi.com/?apikey={api_key}&t={clean_title}"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for bad responses
+        data = response.json()
+
+        if data.get('Response') == 'True':
+            return 'movie' if data.get('Type') == 'movie' else 'tv' if data.get('Type') == 'series' else None
+    except requests.RequestException as e:
+        logger.error(f"Error querying OMDb API: {e}")
+    except json.JSONDecodeError as e:
+        logger.error(f"Error decoding OMDb API response: {e}")
+    
+    return None
+
 def process_directory(config):
     input_dir = os.path.expanduser(config['input_directory'])
     output_dir = os.path.expanduser(config['output_directory'])
+    movie_dir = os.path.expanduser(config.get('movie_output_directory', output_dir))
+    tv_dir = os.path.expanduser(config.get('tv_output_directory', output_dir))
     extensions = config['file_extensions']
+    use_media_detection = config.get('use_media_detection', False)
 
-    if not os.path.exists(input_dir):
-        os.makedirs(input_dir)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    for dir in [input_dir, output_dir, movie_dir, tv_dir]:
+        if not os.path.exists(dir):
+            os.makedirs(dir)
 
     files_to_process = []
     for root, dirs, files in os.walk(input_dir):
@@ -413,8 +449,25 @@ def process_directory(config):
             if any(file.lower().endswith(ext.lower()) for ext in extensions):
                 input_path = os.path.join(root, file)
                 rel_path = os.path.relpath(input_path, input_dir)
-                output_path = os.path.join(output_dir, rel_path)
-                logger.debug(f"Adding file to process: {input_path}")
+                
+                if use_media_detection:
+                    # Detect media type
+                    file_name = os.path.splitext(file)[0]
+                    media_type = detect_media_type(file_name, config)
+                    
+                    if media_type == 'movie':
+                        output_path = os.path.join(movie_dir, rel_path)
+                        logger.info(f"Detected movie: {file_name}")
+                    elif media_type == 'tv':
+                        output_path = os.path.join(tv_dir, rel_path)
+                        logger.info(f"Detected TV series: {file_name}")
+                    else:
+                        output_path = os.path.join(output_dir, rel_path)
+                        logger.info(f"Unknown media type: {file_name}")
+                else:
+                    output_path = os.path.join(output_dir, rel_path)
+                
+                logger.debug(f"Adding file to process: {input_path} -> {output_path}")
                 files_to_process.append((input_path, output_path))
 
     total_files = len(files_to_process)
@@ -453,7 +506,7 @@ def process_directory(config):
 def listen_for_quit():
     global shutdown_flag
     while not shutdown_flag.is_set():
-        if input().lower() == 'q':
+        if sys.stdin.readline().strip().lower() == 'q':
             print("\nGraceful shutdown initiated. Completing current file...")
             shutdown_flag.set()
             break
@@ -480,16 +533,24 @@ if __name__ == "__main__":
         failed_files = process_directory(config)
     except Exception as e:
         logger.exception("An unexpected error occurred:")
+        failed_files = []  # Ensure failed_files is defined in case of exception
     finally:
         shutdown_flag.set()  # Ensure the input thread stops
         input_thread.join(timeout=1)  # Wait for the input thread to finish
-        if shutdown_flag.is_set():
-            logger.info("Script execution completed.")
-        elif not failed_files:
-            logger.info("Script execution completed. All files successfully transcoded.")
-        else:
-            logger.info("Script execution completed. Some files encountered errors:")
-            for failed_file in failed_files:
-                logger.info(f"- {failed_file}")
         
-        input("Press [Enter] to continue...")
+        # Prepare the final message
+        if shutdown_flag.is_set():
+            final_message = "Script execution interrupted by user."
+        elif not failed_files:
+            final_message = "Script execution completed. All files successfully transcoded."
+        else:
+            final_message = "Script execution completed. Some files encountered errors:"
+            for failed_file in failed_files:
+                final_message += f"\n- {failed_file}"
+        
+        # Print the final message and prompt
+        print(f"\n{final_message}")
+        print("\nPress [Enter] twice to exit...")
+        
+        # Wait for Enter key
+        input()

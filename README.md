@@ -17,11 +17,18 @@ Rapture-Transcoder is a simple and effecient way to transcode video files. It us
 ```sh
 sudo apt install python3
 ```
+
 2. Install ffmpeg
 ```sh
 sudo apt install ffmpeg
 ```
-3. (WINDOWS ONLY) Add ffmpeg to your PATH, follow this guide:
+
+3. Install requests
+```sh
+pip install requests
+```
+
+4. (WINDOWS ONLY) Add ffmpeg to your PATH, follow this guide:
 ```sh
 https://phoenixnap.com/kb/ffmpeg-windows
 ```
@@ -38,10 +45,12 @@ sudo apt update && sudo apt upgrade -y
 ```sh
 git clone https://github.com/oliverdougherC/Rapture-Transcoder
 ```
+
 3. Navigate to the Rapture-Transcoder directory
 ```sh
 cd Rapture-Transcoder
 ```
+
 
 <!-- CONFIGURATION -->
 ## Configuration
@@ -62,6 +71,7 @@ python3 run_transcode.py
 The first time you run the script, the it will create the default directories specified in the *config.json* file if they do not exist.
 
 2. Sit back and relax while the script transcodes your videos.
+
 3. If you run into an error or are just curious, take a look at the log file
 ```sh
 cat logs/transcoding.log
