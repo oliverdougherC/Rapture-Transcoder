@@ -68,6 +68,7 @@ def load_config():
         config['omdb_api_key'] = config.get('omdb_api_key', '')
         config['movie_output_directory'] = config.get('movie_output_directory', config['output_directory'])
         config['tv_output_directory'] = config.get('tv_output_directory', config['output_directory'])
+        config['delete_original'] = config.get('delete_original', False)
         
         logger.info("Config loaded successfully")
         return config
@@ -433,6 +434,7 @@ def process_directory(config):
     tv_dir = os.path.expanduser(config.get('tv_output_directory', output_dir))
     extensions = config['file_extensions']
     use_media_detection = config.get('use_media_detection', False)
+    delete_original = config.get('delete_original', False)
 
     for dir in [input_dir, output_dir, movie_dir, tv_dir]:
         if not os.path.exists(dir):
@@ -474,6 +476,7 @@ def process_directory(config):
     logger.info(f"Found {total_files} files to process")
 
     failed_files = []
+    processed_files = []
 
     for index, (input_path, output_path) in enumerate(files_to_process, start=1):
         if shutdown_flag.is_set():
@@ -487,7 +490,17 @@ def process_directory(config):
         logger.info(f"Transcoding [{index}/{total_files}]: {file_name}")
         
         success = transcode_video(input_path, output_path, config)
-        if not success:
+        if success:
+            logger.info(f"Successfully transcoded: {file_name}")
+            logger.info(f"New file saved to: {output_path}")
+            processed_files.append((input_path, output_path))
+            if delete_original:
+                try:
+                    os.remove(input_path)
+                    logger.info(f"Deleted original file: {input_path}")
+                except OSError as e:
+                    logger.error(f"Error deleting original file {input_path}: {e}")
+        else:
             logger.warning(f"Transcoding failed for {file_name}")
             failed_files.append(file_name)
 
@@ -501,7 +514,11 @@ def process_directory(config):
         for failed_file in failed_files:
             logger.info(f"- {failed_file}")
 
-    return failed_files
+    logger.info("Processed files:")
+    for input_file, output_file in processed_files:
+        logger.info(f"- {input_file} -> {output_file}")
+
+    return failed_files, processed_files
 
 def listen_for_quit():
     global shutdown_flag
@@ -530,10 +547,10 @@ if __name__ == "__main__":
     try:
         config = load_config()
         logger.debug("Config loaded successfully")
-        failed_files = process_directory(config)
+        failed_files, processed_files = process_directory(config)
     except Exception as e:
         logger.exception("An unexpected error occurred:")
-        failed_files = []  # Ensure failed_files is defined in case of exception
+        failed_files, processed_files = [], []  # Ensure variables are defined in case of exception
     finally:
         shutdown_flag.set()  # Ensure the input thread stops
         input_thread.join(timeout=1)  # Wait for the input thread to finish
@@ -541,16 +558,29 @@ if __name__ == "__main__":
         # Prepare the final message
         if shutdown_flag.is_set():
             final_message = "Script execution interrupted by user."
-        elif not failed_files:
-            final_message = "Script execution completed. All files successfully transcoded."
+        elif not failed_files and processed_files:
+            final_message = "Script execution completed successfully."
+        elif failed_files:
+            final_message = "Script execution completed with some errors."
         else:
-            final_message = "Script execution completed. Some files encountered errors:"
+            final_message = "Script execution completed. No files were processed."
+
+        if processed_files:
+            final_message += "\n\nProcessed files:"
+            for input_file, output_file in processed_files:
+                final_message += f"\n- {os.path.basename(input_file)}"
+
+        if failed_files:
+            final_message += "\n\nFailed files:"
             for failed_file in failed_files:
-                final_message += f"\n- {failed_file}"
+                final_message += f"\n- {os.path.basename(failed_file)}"
+
+        if not shutdown_flag.is_set() and config.get('delete_original', False) and processed_files:
+            final_message += "\n\nOriginal files were deleted after successful transcoding."
         
         # Print the final message and prompt
         print(f"\n{final_message}")
-        print("\nPress [Enter] twice to exit...")
+        print("\nPress Enter to exit...")
         
         # Wait for Enter key
         input()

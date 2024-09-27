@@ -9,8 +9,10 @@
 
     "video_codec": "x264",
 
-    "use_media_detection": false,
+    "use_media_detection": true,
     "movie_output_directory": "~/media/movies",
     "tv_output_directory": "~/media/tv_shows",
-    "omdb_api_key": "your_omdb_api_key_here"
+    "omdb_api_key": "your_omdb_api_key_here",
+
+    "delete_original": false
 }
