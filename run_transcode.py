@@ -8,11 +8,14 @@ import re
 import threading
 import time
 import requests
-
-shutdown_flag = threading.Event()
+import queue
 
 def setup_logging():
-    log_dir = 'logs'
+    # Get the directory of the current script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Construct the path to the logs directory
+    log_dir = os.path.join(script_dir, 'logs')
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     
@@ -324,11 +327,6 @@ def transcode_video(input_file, output_file, config):
         last_frame = 0
         
         while True:
-            if shutdown_flag.is_set():
-                process.terminate()
-                logger.info(f"Transcoding of {os.path.basename(input_file)} interrupted due to shutdown request.")
-                return False
-
             output = process.stderr.readline()
             if output == '' and process.poll() is not None:
                 break
@@ -477,12 +475,9 @@ def process_directory(config):
 
     failed_files = []
     processed_files = []
+    total_size_saved = 0
 
     for index, (input_path, output_path) in enumerate(files_to_process, start=1):
-        if shutdown_flag.is_set():
-            logger.info("Graceful shutdown initiated. Stopping further processing.")
-            break
-
         output_dir = os.path.dirname(output_path)
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -491,42 +486,27 @@ def process_directory(config):
         
         success = transcode_video(input_path, output_path, config)
         if success:
-            logger.info(f"Successfully transcoded: {file_name}")
-            logger.info(f"New file saved to: {output_path}")
-            processed_files.append((input_path, output_path))
+            input_size = os.path.getsize(input_path)
+            output_size = os.path.getsize(output_path)
+            size_saved = input_size - output_size
+            total_size_saved += size_saved
+            processed_files.append((input_path, size_saved))
             if delete_original:
                 try:
                     os.remove(input_path)
-                    logger.info(f"Deleted original file: {input_path}")
                 except OSError as e:
                     logger.error(f"Error deleting original file {input_path}: {e}")
         else:
-            logger.warning(f"Transcoding failed for {file_name}")
             failed_files.append(file_name)
 
-    if shutdown_flag.is_set():
-        logger.info("Processing stopped due to user request.")
-    elif not failed_files:
-        logger.info("All files successfully transcoded.")
-    else:
-        logger.info("Transcoding process completed. Some files encountered errors.")
-        logger.info("Failed files:")
-        for failed_file in failed_files:
-            logger.info(f"- {failed_file}")
+    return failed_files, processed_files, total_size_saved
 
-    logger.info("Processed files:")
-    for input_file, output_file in processed_files:
-        logger.info(f"- {input_file} -> {output_file}")
-
-    return failed_files, processed_files
-
-def listen_for_quit():
-    global shutdown_flag
-    while not shutdown_flag.is_set():
-        if sys.stdin.readline().strip().lower() == 'q':
-            print("\nGraceful shutdown initiated. Completing current file...")
-            shutdown_flag.set()
-            break
+def human_readable_size(size_in_bytes):
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size_in_bytes < 1024.0:
+            return f"{size_in_bytes:.2f} {unit}"
+        size_in_bytes /= 1024.0
+    return f"{size_in_bytes:.2f} PB"
 
 if __name__ == "__main__":
     logger = setup_logging()
@@ -538,27 +518,14 @@ if __name__ == "__main__":
     else:
         logger.info("No compatible GPU detected, using CPU encoding")
 
-    print("Enter 'q' at any time to gracefully stop the process.")
-
-    input_thread = threading.Thread(target=listen_for_quit)
-    input_thread.daemon = True
-    input_thread.start()
-
     try:
         config = load_config()
-        logger.debug("Config loaded successfully")
-        failed_files, processed_files = process_directory(config)
+        failed_files, processed_files, total_size_saved = process_directory(config)
     except Exception as e:
         logger.exception("An unexpected error occurred:")
-        failed_files, processed_files = [], []  # Ensure variables are defined in case of exception
+        failed_files, processed_files, total_size_saved = [], [], 0
     finally:
-        shutdown_flag.set()  # Ensure the input thread stops
-        input_thread.join(timeout=1)  # Wait for the input thread to finish
-        
-        # Prepare the final message
-        if shutdown_flag.is_set():
-            final_message = "Script execution interrupted by user."
-        elif not failed_files and processed_files:
+        if processed_files:
             final_message = "Script execution completed successfully."
         elif failed_files:
             final_message = "Script execution completed with some errors."
@@ -567,20 +534,17 @@ if __name__ == "__main__":
 
         if processed_files:
             final_message += "\n\nProcessed files:"
-            for input_file, output_file in processed_files:
+            for input_file, _ in processed_files:
                 final_message += f"\n- {os.path.basename(input_file)}"
 
         if failed_files:
             final_message += "\n\nFailed files:"
             for failed_file in failed_files:
-                final_message += f"\n- {os.path.basename(failed_file)}"
+                final_message += f"\n- {failed_file}"
 
-        if not shutdown_flag.is_set() and config.get('delete_original', False) and processed_files:
-            final_message += "\n\nOriginal files were deleted after successful transcoding."
-        
-        # Print the final message and prompt
+        if config.get('delete_original', False) and processed_files:
+            final_message += f"\n\nTotal file reduction: {human_readable_size(total_size_saved)}"
+
         print(f"\n{final_message}")
-        print("\nPress Enter to exit...")
-        
-        # Wait for Enter key
+        print("\nPress [Enter] to exit...")
         input()
