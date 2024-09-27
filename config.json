@@ -1,7 +1,7 @@
 {
     "input_directory": "~/media/trans_in",
     "output_directory": "~/media/trans_out",
-    "file_extensions": [".mp4", ".avi", ".mkv"],
+    "file_extensions": [".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm", ".m4v"],
     "quality": 18,
 
     "audio_bitrate": 0,
@@ -9,7 +9,7 @@
 
     "video_codec": "x264",
 
-    "use_media_detection": true,
+    "use_media_detection": false,
     "movie_output_directory": "~/media/movies",
     "tv_output_directory": "~/media/tv_shows",
     "omdb_api_key": "your_omdb_api_key_here"
