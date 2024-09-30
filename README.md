@@ -75,6 +75,5 @@ cat logs/transcoding.log
 
 The first time you run the script, the it will create the default directories specified in the *config.json* file if they do not exist.
 
-```
 
 
