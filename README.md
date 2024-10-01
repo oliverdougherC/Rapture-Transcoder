@@ -11,20 +11,26 @@ Rapture-Transcoder is a simple and effecient way to transcode video files. It us
 
 
 <!-- PREREQUISITES -->
-## Prerequisites
+## For Windows Users Only!
 
-1. Install Python
-```sh
-sudo apt install python3
-```
 
-2. (WINDOWS ONLY) Install and add ffmpeg to your PATH, follow this guide:
+1. Install and add ffmpeg to your PATH, follow this guide:
 ```sh
 https://phoenixnap.com/kb/ffmpeg-windows
 ```
 
+2. Install python3 
+```sh 
+https://www.python.org/downloads/windows/
+```
+
+3. Download the latest release and unzip it.
+
+4. Run the "run.exe" file to use the script.
+
+
 <!-- INSTALLATION -->
-## Installation
+## Debian/Ubuntu Installation
 
 1. Update your packages and libraries
 ```sh
