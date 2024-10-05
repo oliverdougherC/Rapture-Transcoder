@@ -72,6 +72,7 @@ def load_config():
         config['movie_output_directory'] = config.get('movie_output_directory', config['output_directory'])
         config['tv_output_directory'] = config.get('tv_output_directory', config['output_directory'])
         config['delete_original'] = config.get('delete_original', False)
+        config['fallback_encoder'] = config.get('fallback_encoder', '').lower()  # Add this line
         
         logger.info("Config loaded successfully")
         return config
@@ -216,7 +217,7 @@ def check_encoder_support(encoder):
         logger.error(f"Error getting encoder list: {e}")
         return False
 
-def get_encoder(config_encoder, gpu_type):
+def get_encoder(config_encoder, gpu_type, config):
     codec_aliases = {
         "h264": ["x264", "h.264", "avc"],
         "hevc": ["x265", "h265", "h.265"],
@@ -251,7 +252,17 @@ def get_encoder(config_encoder, gpu_type):
         if check_encoder_support(gpu_encoder):
             return gpu_encoder
         else:
-            logger.warning(f"GPU encoder {gpu_encoder} not available. Falling back to CPU encoding.")
+            logger.warning(f"GPU encoder {gpu_encoder} not available. Trying fallback encoder.")
+    
+    # Try fallback encoder with GPU acceleration
+    fallback_encoder = config.get('fallback_encoder')
+    if fallback_encoder and gpu_type in gpu_encoders and fallback_encoder in gpu_encoders[gpu_type]:
+        fallback_gpu_encoder = gpu_encoders[gpu_type][fallback_encoder]
+        if check_encoder_support(fallback_gpu_encoder):
+            logger.info(f"Using fallback GPU encoder: {fallback_gpu_encoder}")
+            return fallback_gpu_encoder
+        else:
+            logger.warning(f"Fallback GPU encoder {fallback_gpu_encoder} not available. Falling back to CPU encoding.")
     
     # Fall back to CPU encoding
     if config_encoder == "h264":
@@ -280,8 +291,16 @@ def transcode_video(input_file, output_file, config):
         return False
 
     gpu_type = detect_gpu()
-    encoder = get_encoder(config['video_codec'], gpu_type)
-    logger.info(f"Transcoding to {encoder} using {gpu_type.upper()} acceleration")
+    encoder = get_encoder(config['video_codec'], gpu_type, config)
+
+    # Determine if we're using GPU or CPU encoding
+    cpu_encoders = ["libx264", "libx265", "libaom-av1"]
+    if encoder in cpu_encoders:
+        acceleration = "CPU"
+    else:
+        acceleration = f"{gpu_type.upper()} GPU"
+
+    logger.info(f"Transcoding to {encoder} using {acceleration} acceleration")
     logger.debug(f"Detected GPU type: {gpu_type}")
     logger.debug(f"Using encoder: {encoder}")
 

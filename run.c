@@ -33,7 +33,7 @@ void trim(char *str) {
 }
 
 int check_dependencies() {
-    int result = system("python --version");
+    int result = system("python3 --version");
     if (result != 0) {
         printf("Python is not installed or not in PATH.\n");
         return 0;
@@ -47,15 +47,19 @@ int check_dependencies() {
 }
 
 void install_dependencies() {
-    printf("Installing Python dependencies...\n");
-    system("pip install -r data/requirements.txt");
-    printf("Dependencies installed.\n");
+    printf("Running setup script...\n");
+    int result = system("./setup");
+    if (result == 0) {
+        printf("Setup completed successfully.\n");
+    } else {
+        printf("An error occurred during setup. Please check the output for details.\n");
+    }
 }
 
 void start_transcoding() {
     char command[1024];
     snprintf(command, sizeof(command), 
-             "python run_transcode.py --input \"%s\" --output \"%s\" --codec %s --crf %d",
+             "python3 run_transcode.py --input \"%s\" --output \"%s\" --codec %s --crf %d",
              input_dir, output_dir, video_codec, quality);
     
     if (use_media_detection) {
@@ -133,7 +137,7 @@ int main() {
         printf("\nRapture-Transcoder Menu:\n");
         printf("1. Start Transcoding\n");
         printf("2. Check Dependencies\n");
-        printf("3. Install Dependencies\n");
+        printf("3. Run Setup\n");  // Changed this line
         printf("4. View Logs\n");
         printf("5. Schedule Transcoding Task\n");
         printf("6. Exit\n");
@@ -152,7 +156,7 @@ int main() {
                 }
                 break;
             case 3:
-                install_dependencies();
+                install_dependencies();  // This now runs ./setup
                 break;
             case 4:
                 view_logs();
